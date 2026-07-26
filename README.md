@@ -1,79 +1,82 @@
-# TrustLink — prototype Android : QR + NFC + biométrie + analyse de risque Gemini
+# TrustLink — Android prototype: QR + NFC + biometrics + Gemini risk analysis
 
-Prototype Kotlin / Jetpack Compose démontrant une authentification forte à trois facteurs,
-avec un moteur anti-fraude Gemini dans la boucle.
+Kotlin / Jetpack Compose prototype demonstrating three-factor strong authentication, with a
+Gemini-powered anti-fraud engine in the loop.
 
-## La boucle d'authentification
+## The authentication loop
 
 ```
-1. QR code   ──► challenge signé par le service : {v, sid, nonce, origin, exp}
-2. NFC       ──► preuve de possession : l'UID du support est haché (SHA-256 salé)
-                 et comparé à l'empreinte enrôlée. L'UID brut n'est ni stocké ni transmis.
-3. Biométrie ──► BiometricPrompt + CryptoObject : débloque une clé EC P-256 du Keystore
-                 matériel (StrongBox si dispo) qui signe
-                 "trustlink/v1|sid|nonce|origin|tagFingerprint|ts".
-4. Gemini    ──► score de risque 0-100 + verdict ALLOW / CHALLENGE / DENY à partir de
-                 signaux contextuels uniquement (jamais de biométrie ni d'UID).
+1. QR code    ──► challenge issued by the remote service: {v, sid, nonce, origin, exp}
+2. NFC        ──► proof of possession: the tag UID is hashed (salted SHA-256) and compared
+                  to the enrolled fingerprint. The raw UID is never stored nor transmitted.
+3. Biometrics ──► BiometricPrompt + CryptoObject unlocks a hardware-backed EC P-256 key
+                  (StrongBox when available) which signs
+                  "trustlink/v1|sid|nonce|origin|tagFingerprint|ts".
+4. Gemini     ──► 0-100 risk score and ALLOW / CHALLENGE / DENY verdict, derived from
+                  contextual signals only (never biometrics, never the raw UID).
 ```
 
-La signature reste la seule preuve cryptographique d'identité : Gemini est **consultatif**
-et ne peut que durcir la décision (DENY bloque l'accès), jamais l'assouplir. En l'absence de
-clé API, un moteur de règles local prend le relais avec les mêmes seuils.
+The signature remains the only cryptographic proof of identity: Gemini is **advisory** and can
+only harden the decision (DENY blocks access), never relax it. Without an API key, a local
+rule-based engine takes over with the same thresholds.
 
 ## Modules
 
-| Fichier | Rôle |
+| File | Responsibility |
 |---|---|
-| `security/KeystoreManager.kt` | Clé EC P-256 non exportable, `setUserAuthenticationRequired(true)`, `AUTH_BIOMETRIC_STRONG`, invalidée si une nouvelle empreinte est enrôlée |
-| `security/BiometricSigner.kt` | `BiometricPrompt` avec `CryptoObject(Signature)` — la signature est impossible sans validation biométrique |
-| `nfc/NfcController.kt` | Foreground dispatch NFC, empreinte SHA-256 salée de l'UID |
-| `qr/QrChallengeScanner.kt` | Scan via Google Code Scanner (aucune permission caméra), parsing et validation du challenge |
-| `ai/GeminiRiskAnalyzer.kt` | Appel `generateContent` (`gemini-flash-lite-latest`, `responseMimeType: application/json`) + repli par règles |
-| `data/EnrollmentStore.kt` | `EncryptedSharedPreferences` : empreinte du support, clé publique, historique |
-| `AuthViewModel.kt` | Orchestration de la boucle et machine à états |
+| `security/KeystoreManager.kt` | Non-exportable EC P-256 key, `setUserAuthenticationRequired(true)`, `AUTH_BIOMETRIC_STRONG`, invalidated when a new biometric is enrolled |
+| `security/BiometricSigner.kt` | `BiometricPrompt` with `CryptoObject(Signature)` — signing is impossible without biometric confirmation |
+| `nfc/NfcController.kt` | NFC foreground dispatch, salted SHA-256 fingerprint of the tag UID |
+| `qr/QrChallengeScanner.kt` | Scanning via Google Code Scanner (no camera permission), challenge parsing and validation |
+| `ai/GeminiRiskAnalyzer.kt` | `generateContent` call (`gemini-flash-lite-latest`, `responseMimeType: application/json`) with rule-based fallback |
+| `data/EnrollmentStore.kt` | `EncryptedSharedPreferences`: tag fingerprint, public key, authentication history |
+| `AuthViewModel.kt` | Loop orchestration and state machine |
 
 ## Configuration
 
 ```properties
 # local.properties
-sdk.dir=/chemin/vers/Android/Sdk
-GEMINI_API_KEY=votre_cle
+sdk.dir=/path/to/Android/Sdk
+GEMINI_API_KEY=your_key
 ```
 
-La clé est injectée dans `BuildConfig.GEMINI_API_KEY`. Sans clé, l'app fonctionne en mode
-règles locales.
+The key is injected into `BuildConfig.GEMINI_API_KEY`. Without a key the app runs in
+local-rules mode.
 
-> En production, l'appel Gemini doit être fait **côté serveur** : une clé API embarquée dans
-> un APK est extractible. Ici elle est côté client pour garder le prototype autonome.
+> In production the Gemini call belongs **server-side**: an API key shipped inside an APK is
+> extractable. It lives client-side here to keep the prototype self-contained.
 
 ## Build
 
 ```bash
-./gradlew :app:assembleDebug   # APK debug
+./gradlew :app:assembleDebug      # debug APK
 ./gradlew :app:testDebugUnitTest
 ```
 
-Nécessite le SDK Android (platform 34, build-tools 34) et un JDK 17.
+Requires the Android SDK (platform 34, build-tools 34) and JDK 17.
 
-## Tester le flux
+## Trying the flow
 
-1. Installer l'APK sur un appareil physique **avec NFC et biométrie enrôlée** (l'émulateur
-   n'a pas de NFC).
-2. « Enrôler mon support NFC » puis approcher une carte/badge NFC.
-3. Générer un QR code de test contenant, par ex. :
+1. Install the APK on a **physical device with NFC and an enrolled biometric** (emulators have
+   no NFC).
+2. Tap "Enrôler mon support NFC", then hold an NFC card/badge against the phone.
+3. Generate a test QR code containing, for example:
    ```json
    {"v":1,"sid":"s-1","nonce":"9f2c1b","origin":"https://demo.trustlink.fr","exp":4102444800}
    ```
-4. « S'authentifier » → scanner le QR → approcher le même support → valider la biométrie.
-5. L'écran affiche l'assertion signée et l'évaluation de risque.
+4. Tap "S'authentifier" → scan the QR code → tap the same NFC tag → confirm with biometrics.
+5. The screen shows the signed assertion and the risk assessment.
 
-Cas d'échec à essayer : approcher un **autre** support NFC (→ DENY), utiliser un QR avec
-`exp` dans le passé (→ challenge expiré), annuler le prompt biométrique.
+Failure cases worth trying: tap a **different** NFC tag (→ DENY), use a QR code whose `exp` is
+in the past (→ expired challenge), cancel the biometric prompt.
 
-## Limites du prototype
+The UI strings are in French; the code, comments in this file and the architecture are
+language-agnostic.
 
-- Pas de backend : le serveur qui émet le nonce et vérifie la signature ECDSA avec la clé
-  publique enrôlée reste à écrire (`/challenge` + `/verify`).
-- Le nonce n'est pas vérifié comme à usage unique côté client (c'est le rôle du serveur).
-- L'attestation de clé (`KeyGenParameterSpec.setAttestationChallenge`) n'est pas exploitée :
-  c'est elle qui prouverait au serveur que la clé vit bien dans un TEE/StrongBox.
+## Prototype limitations
+
+- No backend: the server that issues the nonce and verifies the ECDSA signature against the
+  enrolled public key still has to be written (`/challenge` + `/verify`).
+- Single-use nonce enforcement is not done client-side (that is the server's job).
+- Key attestation (`KeyGenParameterSpec.setAttestationChallenge`) is not used — it is what
+  would prove to the server that the key really lives in a TEE/StrongBox.
