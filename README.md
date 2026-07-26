@@ -80,3 +80,15 @@ The UI is in English by default and localized in French through `res/values-fr/s
 - Single-use nonce enforcement is not done client-side (that is the server's job).
 - Key attestation (`KeyGenParameterSpec.setAttestationChallenge`) is not used — it is what
   would prove to the server that the key really lives in a TEE/StrongBox.
+
+
+---
+
+### 📌 How to use this for GitHub
+
+1. Create a new repository on GitHub.
+2. Copy the content above into a file named `README.md` in the root of your project.
+3. Add your actual screenshots inside a `screenshots/` folder to replace the placeholders.
+4. Ensure the `LICENSE` file exists (if you choose MIT, update the badge accordingly).
+
+Let me know if you need a separate `CHANGELOG.md` file or more details on any section!
