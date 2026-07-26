@@ -73,10 +73,34 @@ in the past (→ expired challenge), cancel the biometric prompt.
 The UI is in English by default and localized in French through `res/values-fr/strings.xml`
 (the device language decides).
 
+## Backend (`:server`)
+
+A Ktor service that issues the challenges and verifies the assertions. Run it with:
+
+```bash
+./gradlew :server:run          # listens on :8080, PORT overrides it
+./gradlew :server:test
+```
+
+| Endpoint | Role |
+|---|---|
+| `POST /enroll` | Registers `{tagFingerprint, publicKeyPem}` produced by the on-device enrollment and returns a `deviceId` |
+| `POST /challenge` | Issues a single-use challenge and returns `qrPayload`, the exact string to render as a QR code |
+| `POST /verify` | Checks `{sessionId, payload, signatureBase64}` and answers `200 {granted:true}` or `401` |
+
+`/verify` refuses unless **all** of the following hold: the session exists and has not been
+consumed yet, the challenge has not expired, the signed payload is well formed and carries the
+same `sid`/`nonce`/`origin` as the issued challenge, the device timestamp is within 120 s of the
+server clock, the tag fingerprint belongs to an enrolled device, and the ECDSA signature checks
+out **against the public key stored at enrollment** (a key sent in the request is never
+trusted). The challenge is consumed on the first attempt, successful or not, so a nonce can
+neither be replayed nor brute-forced.
+
+State is in-memory (`Store`), which is the piece to swap for a database in a real deployment.
+
 ## Prototype limitations
 
-- No backend: the server that issues the nonce and verifies the ECDSA signature against the
-  enrolled public key still has to be written (`/challenge` + `/verify`).
-- Single-use nonce enforcement is not done client-side (that is the server's job).
+- The Android app does not call the backend yet: it validates the loop locally and displays the
+  assertion, which is what `POST /verify` expects as a body.
 - Key attestation (`KeyGenParameterSpec.setAttestationChallenge`) is not used — it is what
   would prove to the server that the key really lives in a TEE/StrongBox.

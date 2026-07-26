@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "TrustLink"
 include(":app")
+include(":server")
