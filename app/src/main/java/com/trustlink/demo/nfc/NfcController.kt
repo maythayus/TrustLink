@@ -7,15 +7,15 @@ import android.nfc.Tag
 import android.os.Build
 import java.security.MessageDigest
 
-/** Résultat de la lecture d'un support NFC (carte, badge, tag). */
+/** Result of reading an NFC medium (card, badge, tag). */
 data class NfcTagInfo(
     val fingerprint: String,
     val technologies: List<String>,
 )
 
 /**
- * Lecture NFC en foreground dispatch : l'application capte les tags tant qu'elle est au
- * premier plan, sans passer par le dispatch système.
+ * NFC reading through foreground dispatch: the app captures tags while it is in the
+ * foreground, bypassing the system dispatch.
  */
 class NfcController(private val activity: Activity) {
 
@@ -41,7 +41,7 @@ class NfcController(private val activity: Activity) {
         adapter?.disableForegroundDispatch(activity)
     }
 
-    /** Extrait le tag d'un intent NFC et le réduit à une empreinte non réversible. */
+    /** Extracts the tag from an NFC intent and reduces it to a non-reversible fingerprint. */
     fun readTag(intent: Intent): NfcTagInfo? {
         val tag: Tag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
@@ -58,8 +58,8 @@ class NfcController(private val activity: Activity) {
 
     companion object {
         /**
-         * L'UID brut n'est jamais conservé ni transmis : seule une empreinte SHA-256
-         * salée par le domaine applicatif est stockée.
+         * The raw UID is never kept nor transmitted: only a SHA-256 fingerprint salted with
+         * the application domain is stored.
          */
         fun fingerprintOf(uid: ByteArray): String {
             val digest = MessageDigest.getInstance("SHA-256")

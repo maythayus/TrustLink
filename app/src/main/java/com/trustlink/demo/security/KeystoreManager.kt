@@ -12,9 +12,9 @@ import java.security.spec.ECGenParameterSpec
 import android.util.Base64
 
 /**
- * Gère la paire de clés EC P-256 stockée dans le Keystore matériel (StrongBox si présent).
- * La clé privée n'est utilisable qu'après une authentification biométrique forte et est
- * invalidée automatiquement si l'utilisateur enrôle une nouvelle empreinte.
+ * Owns the EC P-256 key pair stored in the hardware Keystore (StrongBox when available).
+ * The private key can only be used right after a strong biometric authentication, and is
+ * invalidated automatically when the user enrolls a new biometric.
  */
 object KeystoreManager {
 
@@ -33,8 +33,8 @@ object KeystoreManager {
     }
 
     /**
-     * Crée la clé d'identité. [useStrongBox] est retenté sans StrongBox si le matériel
-     * ne le supporte pas.
+     * Creates the identity key. When [useStrongBox] is not supported by the hardware, the
+     * generation is retried without it.
      */
     fun createKey(useStrongBox: Boolean = true): PublicKey {
         deleteKey()
@@ -69,13 +69,13 @@ object KeystoreManager {
 
     private fun privateKey(): PrivateKey =
         keyStore.getKey(KEY_ALIAS, null) as? PrivateKey
-            ?: throw IllegalStateException("Aucune clé d'identité : enrôlement requis")
+            ?: throw IllegalStateException("No identity key: enrollment required")
 
     fun publicKey(): PublicKey =
         keyStore.getCertificate(KEY_ALIAS)?.publicKey
-            ?: throw IllegalStateException("Aucune clé d'identité : enrôlement requis")
+            ?: throw IllegalStateException("No identity key: enrollment required")
 
-    /** Objet [Signature] initialisé, à passer au BiometricPrompt via un CryptoObject. */
+    /** Initialized [Signature] object, to be handed to the BiometricPrompt CryptoObject. */
     fun initSignature(): Signature =
         Signature.getInstance(SIGNATURE_ALGORITHM).apply { initSign(privateKey()) }
 

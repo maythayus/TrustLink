@@ -26,9 +26,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.trustlink.demo.R
 import com.trustlink.demo.Step
 import com.trustlink.demo.UiState
 import com.trustlink.demo.model.RiskAssessment
@@ -44,7 +46,7 @@ fun TrustLinkScreen(
     onCancel: () -> Unit,
     onReset: () -> Unit,
 ) {
-    Scaffold(topBar = { TopAppBar(title = { Text("TrustLink — NFC · QR · Biométrie") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.app_title)) }) }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -55,8 +57,8 @@ fun TrustLinkScreen(
         ) {
             if (!nfcAvailable) {
                 InfoCard(
-                    title = "NFC indisponible",
-                    body = "Activez le NFC dans les réglages : la lecture du support est requise pour le facteur de possession.",
+                    title = stringResource(R.string.nfc_unavailable_title),
+                    body = stringResource(R.string.nfc_unavailable_body),
                     container = MaterialTheme.colorScheme.errorContainer,
                 )
             }
@@ -65,10 +67,12 @@ fun TrustLinkScreen(
 
             state.enrollment?.let { enrollment ->
                 InfoCard(
-                    title = "Identité enrôlée",
-                    body = "Empreinte du support : ${enrollment.tagFingerprint.take(16)}…\n" +
-                        "Technologies : ${enrollment.tagTechnologies.joinToString()}\n" +
-                        "Clé publique EC P-256 liée à la biométrie, non exportable.",
+                    title = stringResource(R.string.enrollment_title),
+                    body = stringResource(
+                        R.string.enrollment_body,
+                        enrollment.tagFingerprint.take(16),
+                        enrollment.tagTechnologies.joinToString(),
+                    ),
                 )
             }
 
@@ -76,16 +80,20 @@ fun TrustLinkScreen(
 
             state.assertion?.let { assertion ->
                 InfoCard(
-                    title = "Assertion signée",
-                    body = "Session : ${assertion.sessionId}\n\nPayload :\n${assertion.payload}\n\n" +
-                        "Signature (base64) :\n${assertion.signatureBase64.take(88)}…",
+                    title = stringResource(R.string.assertion_title),
+                    body = stringResource(
+                        R.string.assertion_body,
+                        assertion.sessionId,
+                        assertion.payload,
+                        assertion.signatureBase64.take(88),
+                    ),
                     monospace = true,
                 )
             }
 
             state.error?.let {
                 InfoCard(
-                    title = "Erreur",
+                    title = stringResource(R.string.error_title),
                     body = it,
                     container = MaterialTheme.colorScheme.errorContainer,
                 )
@@ -99,23 +107,23 @@ fun TrustLinkScreen(
                     Step.WAITING_QR,
                     Step.WAITING_TAG_AUTH,
                 ) -> OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
-                    Text("Annuler")
+                    Text(stringResource(R.string.action_cancel))
                 }
 
                 state.enrollment == null -> Button(
                     onClick = onEnroll,
                     enabled = nfcAvailable,
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("Enrôler mon support NFC") }
+                ) { Text(stringResource(R.string.action_enroll)) }
 
                 else -> {
                     Button(
                         onClick = onAuthenticate,
                         enabled = nfcAvailable && !state.busy,
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("S'authentifier (scanner le QR code)") }
+                    ) { Text(stringResource(R.string.action_authenticate)) }
                     OutlinedButton(onClick = onReset, modifier = Modifier.fillMaxWidth()) {
-                        Text("Réinitialiser l'enrôlement")
+                        Text(stringResource(R.string.action_reset))
                     }
                 }
             }
@@ -125,23 +133,27 @@ fun TrustLinkScreen(
 
 @Composable
 private fun StatusCard(state: UiState) {
-    val stepLabel = when (state.step) {
-        Step.IDLE -> "Prêt"
-        Step.WAITING_TAG_ENROLLMENT -> "1/4 — Enrôlement : lecture du support NFC"
-        Step.WAITING_QR -> "1/4 — Scan du QR code (challenge)"
-        Step.WAITING_TAG_AUTH -> "2/4 — Preuve de possession : approchez le support NFC"
-        Step.WAITING_BIOMETRIC -> "3/4 — Signature biométrique"
-        Step.ANALYZING_RISK -> "4/4 — Analyse de risque Gemini"
-        Step.DONE -> "Terminé"
-    }
+    val stepLabel = stringResource(
+        when (state.step) {
+            Step.IDLE -> R.string.step_idle
+            Step.WAITING_TAG_ENROLLMENT -> R.string.step_enrollment_tag
+            Step.WAITING_QR -> R.string.step_scan_qr
+            Step.WAITING_TAG_AUTH -> R.string.step_auth_tag
+            Step.WAITING_BIOMETRIC -> R.string.step_biometric
+            Step.ANALYZING_RISK -> R.string.step_risk
+            Step.DONE -> R.string.step_done
+        }
+    )
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(stepLabel, style = MaterialTheme.typography.titleMedium)
             state.message?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
             Text(
-                if (state.geminiConfigured) "Moteur de risque : Gemini"
-                else "Moteur de risque : règles locales (clé Gemini absente)",
+                stringResource(
+                    if (state.geminiConfigured) R.string.risk_engine_gemini
+                    else R.string.risk_engine_local
+                ),
                 style = MaterialTheme.typography.labelMedium,
             )
             if (state.step in setOf(Step.ANALYZING_RISK, Step.WAITING_QR) || state.busy) {
@@ -167,7 +179,7 @@ private fun RiskCard(assessment: RiskAssessment) {
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                "Risque ${assessment.score}/100 · ${assessment.verdict}",
+                stringResource(R.string.risk_header, assessment.score, assessment.verdict.name),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -178,8 +190,10 @@ private fun RiskCard(assessment: RiskAssessment) {
             Text(assessment.rationale, style = MaterialTheme.typography.bodyMedium)
             assessment.signals.forEach { Text("• $it", style = MaterialTheme.typography.bodySmall) }
             Text(
-                if (assessment.fromModel) "Évaluation produite par Gemini"
-                else "Évaluation locale (repli)",
+                stringResource(
+                    if (assessment.fromModel) R.string.risk_from_model
+                    else R.string.risk_from_rules
+                ),
                 style = MaterialTheme.typography.labelSmall,
             )
         }

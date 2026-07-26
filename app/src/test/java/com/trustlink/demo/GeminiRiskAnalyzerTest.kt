@@ -32,21 +32,21 @@ class GeminiRiskAnalyzerTest {
     )
 
     @Test
-    fun `nominal autorise`() {
+    fun `nominal attempt is allowed`() {
         val assessment = analyzer.heuristicAssessment(context(), "test")
         assertEquals(RiskVerdict.ALLOW, assessment.verdict)
         assertFalse(assessment.fromModel)
     }
 
     @Test
-    fun `support nfc different refuse`() {
+    fun `different nfc tag is denied`() {
         val assessment = analyzer.heuristicAssessment(context(tagMatches = false), "test")
         assertEquals(RiskVerdict.DENY, assessment.verdict)
         assertTrue(assessment.signals.any { it.contains("NFC") })
     }
 
     @Test
-    fun `challenge perime et echecs biometriques declenchent une verification`() {
+    fun `expired challenge and biometric failures trigger a step up`() {
         val assessment = analyzer.heuristicAssessment(
             context(challengeAge = 300, failures = 3),
             "test",
@@ -55,7 +55,7 @@ class GeminiRiskAnalyzerTest {
     }
 
     @Test
-    fun `sans cle api le modele est desactive`() {
+    fun `model is disabled without an api key`() {
         assertFalse(analyzer.isModelConfigured)
     }
 }

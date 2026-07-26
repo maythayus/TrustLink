@@ -13,7 +13,7 @@ import org.json.JSONObject
 
 class InvalidChallengeException(message: String) : Exception(message)
 
-/** Scanne le QR code du service distant et en extrait le challenge d'authentification. */
+/** Scans the remote service's QR code and extracts the authentication challenge from it. */
 object QrChallengeScanner {
 
     suspend fun scan(context: Context): QrChallenge {
@@ -28,7 +28,7 @@ object QrChallengeScanner {
             task.addOnSuccessListener { barcode ->
                 val value = barcode.rawValue
                 if (value.isNullOrBlank()) {
-                    continuation.resumeWithException(InvalidChallengeException("QR code vide"))
+                    continuation.resumeWithException(InvalidChallengeException("Empty QR code"))
                 } else {
                     continuation.resume(value)
                 }
@@ -44,23 +44,23 @@ object QrChallengeScanner {
         val json = try {
             JSONObject(raw)
         } catch (e: Exception) {
-            throw InvalidChallengeException("QR code non reconnu : format JSON attendu")
+            throw InvalidChallengeException("Unrecognized QR code: JSON payload expected")
         }
 
         val version = json.optInt("v", 0)
-        if (version != 1) throw InvalidChallengeException("Version de challenge non supportée : $version")
+        if (version != 1) throw InvalidChallengeException("Unsupported challenge version: $version")
 
         val sessionId = json.optString("sid")
         val nonce = json.optString("nonce")
         if (sessionId.isBlank() || nonce.isBlank()) {
-            throw InvalidChallengeException("Challenge incomplet : 'sid' et 'nonce' sont requis")
+            throw InvalidChallengeException("Incomplete challenge: 'sid' and 'nonce' are required")
         }
 
         return QrChallenge(
             version = version,
             sessionId = sessionId,
             nonce = nonce,
-            origin = json.optString("origin", "inconnu"),
+            origin = json.optString("origin", "unknown"),
             expiresAtSeconds = json.optLong("exp", 0L),
         )
     }

@@ -73,12 +73,12 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.8.2")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
-    // Scanner de QR code sans permission caméra (Google Play services)
+    // QR code scanning without the camera permission (Google Play services)
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     testImplementation("junit:junit:4.13.2")
-    // org.json est un stub dans android.jar : implémentation réelle pour les tests JVM
+    // org.json is a stub in android.jar: real implementation for JVM unit tests
     testImplementation("org.json:json:20240303")
 }

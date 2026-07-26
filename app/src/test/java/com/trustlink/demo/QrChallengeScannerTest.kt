@@ -10,7 +10,7 @@ import org.junit.Test
 class QrChallengeScannerTest {
 
     @Test
-    fun `parse un challenge valide`() {
+    fun `parses a valid challenge`() {
         val challenge = QrChallengeScanner.parse(
             """{"v":1,"sid":"s-123","nonce":"abcdef","origin":"https://service.fr","exp":4102444800}"""
         )
@@ -20,7 +20,7 @@ class QrChallengeScannerTest {
     }
 
     @Test
-    fun `detecte un challenge expire`() {
+    fun `detects an expired challenge`() {
         val challenge = QrChallengeScanner.parse(
             """{"v":1,"sid":"s","nonce":"n","origin":"o","exp":1}"""
         )
@@ -28,17 +28,17 @@ class QrChallengeScannerTest {
     }
 
     @Test(expected = InvalidChallengeException::class)
-    fun `rejette une version inconnue`() {
+    fun `rejects an unknown version`() {
         QrChallengeScanner.parse("""{"v":9,"sid":"s","nonce":"n"}""")
     }
 
     @Test(expected = InvalidChallengeException::class)
-    fun `rejette un nonce manquant`() {
+    fun `rejects a missing nonce`() {
         QrChallengeScanner.parse("""{"v":1,"sid":"s"}""")
     }
 
     @Test(expected = InvalidChallengeException::class)
-    fun `rejette un contenu non json`() {
+    fun `rejects non json content`() {
         QrChallengeScanner.parse("https://exemple.fr")
     }
 }

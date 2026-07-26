@@ -46,8 +46,8 @@ data class UiState(
 )
 
 /**
- * Orchestre la boucle : QR (challenge) → NFC (possession) → biométrie (signature Keystore)
- * → analyse de risque Gemini → verdict.
+ * Orchestrates the loop: QR (challenge) → NFC (possession) → biometrics (Keystore signature)
+ * → Gemini risk analysis → verdict.
  */
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -72,7 +72,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 error = null,
                 assertion = null,
                 assessment = null,
-                message = "Approchez le support NFC à enrôler du dos du téléphone",
+                message = string(R.string.msg_tap_tag_to_enroll),
             )
         }
     }
@@ -90,7 +90,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     fun startAuthentication(activity: FragmentActivity) {
         val enrollment = _state.value.enrollment
         if (enrollment == null) {
-            _state.update { it.copy(error = "Aucune identité enrôlée sur cet appareil") }
+            _state.update { it.copy(error = string(R.string.err_no_enrollment)) }
             return
         }
         viewModelScope.launch {
@@ -101,7 +101,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     error = null,
                     assertion = null,
                     assessment = null,
-                    message = "Scannez le QR code affiché par le service",
+                    message = string(R.string.msg_scan_qr),
                 )
             }
             try {
@@ -112,18 +112,22 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                         step = Step.WAITING_TAG_AUTH,
                         challenge = challenge,
                         busy = false,
-                        message = "Challenge reçu de ${challenge.origin} — approchez votre support NFC",
+                        message = string(R.string.msg_challenge_received, challenge.origin),
                     )
                 }
             } catch (e: Exception) {
                 _state.update {
-                    it.copy(step = Step.IDLE, busy = false, error = e.message ?: "Scan annulé")
+                    it.copy(
+                        step = Step.IDLE,
+                        busy = false,
+                        error = e.message ?: string(R.string.err_scan_cancelled),
+                    )
                 }
             }
         }
     }
 
-    /** Callback du foreground dispatch NFC. */
+    /** Callback of the NFC foreground dispatch. */
     fun onNfcTag(activity: FragmentActivity, tag: NfcTagInfo) {
         when (_state.value.step) {
             Step.WAITING_TAG_ENROLLMENT -> completeEnrollment(tag)
@@ -146,13 +150,16 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     step = Step.IDLE,
                     enrollment = enrollment,
-                    message = "Identité enrôlée : clé matérielle liée à votre biométrie",
+                    message = string(R.string.msg_enrolled),
                     error = null,
                 )
             }
         } catch (e: Exception) {
             _state.update {
-                it.copy(step = Step.IDLE, error = "Échec de l'enrôlement : ${e.message}")
+                it.copy(
+                    step = Step.IDLE,
+                    error = string(R.string.err_enrollment_failed, e.message.orEmpty()),
+                )
             }
         }
     }
@@ -166,22 +173,33 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             var assertion: SignedAssertion? = null
             if (tagMatches && !challenge.isExpired) {
                 _state.update {
-                    it.copy(step = Step.WAITING_BIOMETRIC, message = "Validez avec votre biométrie")
+                    it.copy(
+                        step = Step.WAITING_BIOMETRIC,
+                        message = string(R.string.msg_confirm_biometric),
+                    )
                 }
                 assertion = try {
                     BiometricSigner.signWithBiometrics(
                         activity = activity,
                         sessionId = challenge.sessionId,
                         payload = payloadFor(challenge, enrollment),
+                        title = string(R.string.biometric_title),
+                        subtitle = string(R.string.biometric_subtitle),
                     )
                 } catch (e: Exception) {
                     failedBiometricAttempts++
-                    _state.update { it.copy(error = "Signature biométrique refusée : ${e.message}") }
+                    _state.update {
+                        it.copy(
+                            error = string(R.string.err_biometric_refused, e.message.orEmpty())
+                        )
+                    }
                     null
                 }
             }
 
-            _state.update { it.copy(step = Step.ANALYZING_RISK, message = "Analyse de risque en cours") }
+            _state.update {
+                it.copy(step = Step.ANALYZING_RISK, message = string(R.string.msg_analyzing_risk))
+            }
 
             val assessment = analyzer.assess(
                 AuthContext(
@@ -212,19 +230,25 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     step = Step.DONE,
                     assertion = assertion,
                     assessment = assessment,
-                    message = when {
-                        granted && assessment.verdict == RiskVerdict.ALLOW -> "Accès accordé"
-                        granted -> "Accès accordé sous réserve d'une vérification complémentaire"
-                        !tagMatches -> "Support NFC non reconnu — accès refusé"
-                        challenge.isExpired -> "Challenge expiré — accès refusé"
-                        else -> "Accès refusé"
-                    },
+                    message = string(
+                        when {
+                            granted && assessment.verdict == RiskVerdict.ALLOW ->
+                                R.string.msg_access_granted
+                            granted -> R.string.msg_access_granted_step_up
+                            !tagMatches -> R.string.msg_tag_unknown
+                            challenge.isExpired -> R.string.msg_challenge_expired
+                            else -> R.string.msg_access_denied
+                        }
+                    ),
                 )
             }
         }
     }
 
-    /** Données effectivement signées, transmises au serveur avec la signature. */
+    private fun string(resId: Int, vararg args: Any): String =
+        getApplication<Application>().getString(resId, *args)
+
+    /** Data actually signed, sent to the server alongside the signature. */
     private fun payloadFor(challenge: QrChallenge, enrollment: Enrollment): String =
         listOf(
             "trustlink/v1",

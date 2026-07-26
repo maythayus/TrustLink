@@ -59,19 +59,19 @@ Requires the Android SDK (platform 34, build-tools 34) and JDK 17.
 
 1. Install the APK on a **physical device with NFC and an enrolled biometric** (emulators have
    no NFC).
-2. Tap "Enrôler mon support NFC", then hold an NFC card/badge against the phone.
+2. Tap "Enroll my NFC tag", then hold an NFC card/badge against the phone.
 3. Generate a test QR code containing, for example:
    ```json
    {"v":1,"sid":"s-1","nonce":"9f2c1b","origin":"https://demo.trustlink.fr","exp":4102444800}
    ```
-4. Tap "S'authentifier" → scan the QR code → tap the same NFC tag → confirm with biometrics.
+4. Tap "Authenticate" → scan the QR code → tap the same NFC tag → confirm with biometrics.
 5. The screen shows the signed assertion and the risk assessment.
 
 Failure cases worth trying: tap a **different** NFC tag (→ DENY), use a QR code whose `exp` is
 in the past (→ expired challenge), cancel the biometric prompt.
 
-The UI strings are in French; the code, comments in this file and the architecture are
-language-agnostic.
+The UI is in English by default and localized in French through `res/values-fr/strings.xml`
+(the device language decides).
 
 ## Prototype limitations
 

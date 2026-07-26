@@ -15,12 +15,12 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Analyse de risque de la tentative d'authentification par Gemini.
+ * Gemini-powered risk analysis of an authentication attempt.
  *
- * Le modèle ne voit jamais de donnée biométrique ni l'UID du support NFC : uniquement des
- * signaux contextuels dérivés. Il est consultatif — la signature cryptographique reste la
- * seule preuve d'identité, Gemini ne fait qu'ajouter une décision de risque (allow /
- * challenge / deny). En l'absence de clé API, l'analyse locale par règles prend le relais.
+ * The model never sees biometric data nor the raw NFC UID: only derived contextual signals.
+ * It is advisory — the cryptographic signature remains the only proof of identity, Gemini just
+ * adds a risk decision (allow / challenge / deny). Without an API key, the local rule-based
+ * analysis takes over.
  */
 class GeminiRiskAnalyzer(
     private val apiKey: String = BuildConfig.GEMINI_API_KEY,
@@ -31,11 +31,11 @@ class GeminiRiskAnalyzer(
     val isModelConfigured: Boolean get() = apiKey.isNotBlank()
 
     suspend fun assess(context: AuthContext): RiskAssessment = withContext(Dispatchers.IO) {
-        if (!isModelConfigured) return@withContext heuristicAssessment(context, "Clé Gemini absente")
+        if (!isModelConfigured) return@withContext heuristicAssessment(context, "no Gemini key")
         try {
             callGemini(context)
         } catch (e: Exception) {
-            heuristicAssessment(context, "Gemini injoignable : ${e.message}")
+            heuristicAssessment(context, "Gemini unreachable: ${e.message}")
         }
     }
 
@@ -72,20 +72,20 @@ class GeminiRiskAnalyzer(
             .put("authentications_last_hour", context.previousAuthenticationsLastHour)
 
         val prompt = """
-            Tu es un moteur anti-fraude pour une authentification forte à trois facteurs :
-            possession (support NFC enrôlé), appareil (clé privée du Keystore matériel) et
-            biométrie (empreinte/visage validant l'usage de la clé).
+            You are an anti-fraud engine for a three-factor strong authentication flow:
+            possession (enrolled NFC tag), device (private key in the hardware Keystore) and
+            biometrics (fingerprint/face authorizing the use of that key).
 
-            Évalue la tentative décrite par les signaux JSON ci-dessous et réponds
-            UNIQUEMENT par un objet JSON, sans texte autour, au format :
-            {"score":<0-100>,"verdict":"ALLOW|CHALLENGE|DENY","rationale":"<1 phrase en français>","signals":["<signal marquant>", ...]}
+            Assess the attempt described by the JSON signals below and answer with a JSON
+            object ONLY, no surrounding text, using this shape:
+            {"score":<0-100>,"verdict":"ALLOW|CHALLENGE|DENY","rationale":"<one short sentence>","signals":["<notable signal>", ...]}
 
-            Règles : score = probabilité de fraude. Un tag NFC ne correspondant pas à
-            l'enrôlement, un challenge périmé (age > 120s), des échecs biométriques
-            répétés ou une fréquence anormale d'authentifications augmentent fortement le
-            score. DENY au-dessus de 70, CHALLENGE entre 35 et 70, ALLOW en dessous.
+            Rules: score is the probability of fraud. An NFC tag that does not match the
+            enrollment, an expired challenge (age > 120s), repeated biometric failures or an
+            abnormal authentication frequency raise the score sharply. DENY above 70,
+            CHALLENGE between 35 and 70, ALLOW below.
 
-            Signaux : $signals
+            Signals: $signals
         """.trimIndent()
 
         return JSONObject()
@@ -124,47 +124,47 @@ class GeminiRiskAnalyzer(
             verdict = runCatching {
                 RiskVerdict.valueOf(verdictJson.getString("verdict").uppercase())
             }.getOrElse { verdictFor(score) },
-            rationale = verdictJson.optString("rationale", "Analyse Gemini sans justification"),
+            rationale = verdictJson.optString("rationale", "Gemini assessment without rationale"),
             signals = (0 until signalsArray.length()).map { signalsArray.getString(it) },
             fromModel = true,
         )
     }
 
-    /** Repli déterministe : mêmes seuils que le prompt, sans appel réseau. */
+    /** Deterministic fallback: same thresholds as the prompt, without any network call. */
     internal fun heuristicAssessment(context: AuthContext, reason: String): RiskAssessment {
         var score = 5
         val signals = mutableListOf<String>()
 
         if (!context.tagMatchesEnrollment) {
             score += 70
-            signals += "Support NFC différent de celui enrôlé"
+            signals += "NFC tag differs from the enrolled one"
         }
         if (context.challengeAgeSeconds > 120) {
             score += 25
-            signals += "Challenge QR périmé (${context.challengeAgeSeconds}s)"
+            signals += "Expired QR challenge (${context.challengeAgeSeconds}s)"
         }
         if (context.failedBiometricAttempts >= 3) {
             score += 20
-            signals += "${context.failedBiometricAttempts} échecs biométriques récents"
+            signals += "${context.failedBiometricAttempts} recent biometric failures"
         }
         if (context.previousAuthenticationsLastHour > 10) {
             score += 15
-            signals += "Fréquence d'authentification anormale"
+            signals += "Abnormal authentication frequency"
         }
         if (!context.biometricStrongAvailable) {
             score += 30
-            signals += "Biométrie forte indisponible sur l'appareil"
+            signals += "Strong biometrics unavailable on this device"
         }
         if (context.secondsSinceEnrollment < 60) {
             score += 10
-            signals += "Enrôlement très récent"
+            signals += "Very recent enrollment"
         }
 
         score = score.coerceIn(0, 100)
         return RiskAssessment(
             score = score,
             verdict = verdictFor(score),
-            rationale = "Analyse locale par règles ($reason)",
+            rationale = "Local rule-based assessment ($reason)",
             signals = signals,
             fromModel = false,
         )

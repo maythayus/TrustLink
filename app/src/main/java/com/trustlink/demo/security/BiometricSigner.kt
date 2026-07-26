@@ -11,14 +11,14 @@ import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 class BiometricUnavailableException(val code: Int) :
-    Exception("Biométrie forte indisponible (code $code)")
+    Exception("Strong biometrics unavailable (code $code)")
 
 class BiometricCancelledException(val code: Int, val reason: CharSequence) :
     Exception(reason.toString())
 
 /**
- * Signe le payload d'authentification avec la clé du Keystore : la signature ne peut être
- * produite que si l'utilisateur valide le BiometricPrompt (CryptoObject lié à la clé).
+ * Signs the authentication payload with the Keystore key: the signature can only be produced
+ * if the user confirms the BiometricPrompt (CryptoObject bound to the key).
  */
 object BiometricSigner {
 
@@ -32,8 +32,8 @@ object BiometricSigner {
         activity: FragmentActivity,
         sessionId: String,
         payload: String,
-        title: String = "Confirmer votre identité",
-        subtitle: String = "Signature de la demande d'authentification",
+        title: String,
+        subtitle: String,
     ): SignedAssertion = suspendCancellableCoroutine { continuation ->
         val status = BiometricManager.from(activity).canAuthenticate(AUTHENTICATORS)
         if (status != BiometricManager.BIOMETRIC_SUCCESS) {
@@ -59,7 +59,7 @@ object BiometricSigner {
                 if (!continuation.isActive) return
                 try {
                     val cryptoSignature = requireNotNull(result.cryptoObject?.signature) {
-                        "CryptoObject absent du résultat biométrique"
+                        "CryptoObject missing from the biometric result"
                     }
                     cryptoSignature.update(payload.toByteArray(Charsets.UTF_8))
                     val signed = cryptoSignature.sign()
@@ -81,7 +81,7 @@ object BiometricSigner {
         val info = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
             .setSubtitle(subtitle)
-            .setNegativeButtonText("Annuler")
+            .setNegativeButtonText(activity.getString(android.R.string.cancel))
             .setAllowedAuthenticators(AUTHENTICATORS)
             .setConfirmationRequired(true)
             .build()

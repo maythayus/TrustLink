@@ -9,8 +9,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Stockage chiffré de l'enrôlement local (empreinte du support NFC + clé publique).
- * Aucune donnée biométrique n'est stockée : elle ne quitte jamais le TEE de l'appareil.
+ * Encrypted storage of the local enrollment (NFC tag fingerprint + public key). No biometric
+ * data is ever stored: it never leaves the device TEE.
  */
 class EnrollmentStore(context: Context) {
 

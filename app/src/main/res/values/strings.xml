@@ -1,4 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">TrustLink</string>
+    <string name="app_name" translatable="false">TrustLink</string>
+    <string name="app_title">TrustLink — NFC · QR · Biometrics</string>
+
+    <string name="nfc_unavailable_title">NFC unavailable</string>
+    <string name="nfc_unavailable_body">Turn NFC on in the system settings: reading the tag is required for the possession factor.</string>
+
+    <string name="enrollment_title">Enrolled identity</string>
+    <string name="enrollment_body">Tag fingerprint: %1$s…\nTechnologies: %2$s\nNon-exportable EC P-256 key bound to your biometrics.</string>
+
+    <string name="assertion_title">Signed assertion</string>
+    <string name="assertion_body">Session: %1$s\n\nPayload:\n%2$s\n\nSignature (base64):\n%3$s…</string>
+
+    <string name="error_title">Error</string>
+
+    <string name="action_cancel">Cancel</string>
+    <string name="action_enroll">Enroll my NFC tag</string>
+    <string name="action_authenticate">Authenticate (scan the QR code)</string>
+    <string name="action_reset">Reset enrollment</string>
+
+    <string name="step_idle">Ready</string>
+    <string name="step_enrollment_tag">1/4 — Enrollment: reading the NFC tag</string>
+    <string name="step_scan_qr">1/4 — Scanning the QR code (challenge)</string>
+    <string name="step_auth_tag">2/4 — Proof of possession: tap your NFC tag</string>
+    <string name="step_biometric">3/4 — Biometric signature</string>
+    <string name="step_risk">4/4 — Gemini risk analysis</string>
+    <string name="step_done">Done</string>
+
+    <string name="risk_engine_gemini">Risk engine: Gemini</string>
+    <string name="risk_engine_local">Risk engine: local rules (no Gemini key)</string>
+    <string name="risk_header">Risk %1$d/100 · %2$s</string>
+    <string name="risk_from_model">Assessment produced by Gemini</string>
+    <string name="risk_from_rules">Local assessment (fallback)</string>
+
+    <string name="msg_tap_tag_to_enroll">Hold the NFC tag you want to enroll against the back of the phone</string>
+    <string name="msg_scan_qr">Scan the QR code displayed by the service</string>
+    <string name="msg_challenge_received">Challenge received from %1$s — now tap your NFC tag</string>
+    <string name="msg_enrolled">Identity enrolled: hardware-backed key bound to your biometrics</string>
+    <string name="msg_confirm_biometric">Confirm with your biometrics</string>
+    <string name="msg_analyzing_risk">Risk analysis in progress</string>
+    <string name="msg_access_granted">Access granted</string>
+    <string name="msg_access_granted_step_up">Access granted, pending an additional verification</string>
+    <string name="msg_tag_unknown">Unknown NFC tag — access denied</string>
+    <string name="msg_challenge_expired">Challenge expired — access denied</string>
+    <string name="msg_access_denied">Access denied</string>
+
+    <string name="err_no_enrollment">No identity enrolled on this device</string>
+    <string name="err_scan_cancelled">Scan cancelled</string>
+    <string name="err_enrollment_failed">Enrollment failed: %1$s</string>
+    <string name="err_biometric_refused">Biometric signature refused: %1$s</string>
+
+    <string name="biometric_title">Confirm your identity</string>
+    <string name="biometric_subtitle">Signing the authentication request</string>
 </resources>

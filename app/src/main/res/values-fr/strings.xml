@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_title">TrustLink — NFC · QR · Biométrie</string>
+
+    <string name="nfc_unavailable_title">NFC indisponible</string>
+    <string name="nfc_unavailable_body">Activez le NFC dans les réglages : la lecture du support est requise pour le facteur de possession.</string>
+
+    <string name="enrollment_title">Identité enrôlée</string>
+    <string name="enrollment_body">Empreinte du support : %1$s…\nTechnologies : %2$s\nClé EC P-256 non exportable liée à votre biométrie.</string>
+
+    <string name="assertion_title">Assertion signée</string>
+    <string name="assertion_body">Session : %1$s\n\nPayload :\n%2$s\n\nSignature (base64) :\n%3$s…</string>
+
+    <string name="error_title">Erreur</string>
+
+    <string name="action_cancel">Annuler</string>
+    <string name="action_enroll">Enrôler mon support NFC</string>
+    <string name="action_authenticate">S\'authentifier (scanner le QR code)</string>
+    <string name="action_reset">Réinitialiser l\'enrôlement</string>
+
+    <string name="step_idle">Prêt</string>
+    <string name="step_enrollment_tag">1/4 — Enrôlement : lecture du support NFC</string>
+    <string name="step_scan_qr">1/4 — Scan du QR code (challenge)</string>
+    <string name="step_auth_tag">2/4 — Preuve de possession : approchez le support NFC</string>
+    <string name="step_biometric">3/4 — Signature biométrique</string>
+    <string name="step_risk">4/4 — Analyse de risque Gemini</string>
+    <string name="step_done">Terminé</string>
+
+    <string name="risk_engine_gemini">Moteur de risque : Gemini</string>
+    <string name="risk_engine_local">Moteur de risque : règles locales (clé Gemini absente)</string>
+    <string name="risk_header">Risque %1$d/100 · %2$s</string>
+    <string name="risk_from_model">Évaluation produite par Gemini</string>
+    <string name="risk_from_rules">Évaluation locale (repli)</string>
+
+    <string name="msg_tap_tag_to_enroll">Approchez le support NFC à enrôler du dos du téléphone</string>
+    <string name="msg_scan_qr">Scannez le QR code affiché par le service</string>
+    <string name="msg_challenge_received">Challenge reçu de %1$s — approchez votre support NFC</string>
+    <string name="msg_enrolled">Identité enrôlée : clé matérielle liée à votre biométrie</string>
+    <string name="msg_confirm_biometric">Validez avec votre biométrie</string>
+    <string name="msg_analyzing_risk">Analyse de risque en cours</string>
+    <string name="msg_access_granted">Accès accordé</string>
+    <string name="msg_access_granted_step_up">Accès accordé sous réserve d\'une vérification complémentaire</string>
+    <string name="msg_tag_unknown">Support NFC non reconnu — accès refusé</string>
+    <string name="msg_challenge_expired">Challenge expiré — accès refusé</string>
+    <string name="msg_access_denied">Accès refusé</string>
+
+    <string name="err_no_enrollment">Aucune identité enrôlée sur cet appareil</string>
+    <string name="err_scan_cancelled">Scan annulé</string>
+    <string name="err_enrollment_failed">Échec de l\'enrôlement : %1$s</string>
+    <string name="err_biometric_refused">Signature biométrique refusée : %1$s</string>
+
+    <string name="biometric_title">Confirmer votre identité</string>
+    <string name="biometric_subtitle">Signature de la demande d\'authentification</string>
+</resources>

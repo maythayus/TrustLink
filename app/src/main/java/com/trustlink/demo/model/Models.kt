@@ -1,8 +1,8 @@
 package com.trustlink.demo.model
 
 /**
- * Identité enrôlée sur l'appareil : empreinte du support NFC (jamais l'UID en clair)
- * associée à une clé privée non exportable protégée par la biométrie.
+ * Identity enrolled on the device: fingerprint of the NFC tag (never the raw UID) bound to a
+ * non-exportable private key protected by biometrics.
  */
 data class Enrollment(
     val tagFingerprint: String,
@@ -12,9 +12,9 @@ data class Enrollment(
 )
 
 /**
- * Challenge d'authentification transporté par le QR code affiché par le service distant.
+ * Authentication challenge carried by the QR code displayed by the remote service.
  *
- * Format attendu (JSON) :
+ * Expected JSON shape:
  * {"v":1,"sid":"...","nonce":"...","origin":"https://...","exp":1758000000}
  */
 data class QrChallenge(
@@ -28,7 +28,7 @@ data class QrChallenge(
         get() = expiresAtSeconds > 0 && System.currentTimeMillis() / 1000 > expiresAtSeconds
 }
 
-/** Contexte factuel soumis au moteur d'analyse de risque. */
+/** Factual context submitted to the risk engine. */
 data class AuthContext(
     val origin: String,
     val sessionId: String,
