@@ -18,7 +18,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.trustlink.demo"
+        applicationId = "com.MaythayusCorp.demo"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
